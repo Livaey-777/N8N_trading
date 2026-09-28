@@ -1,0 +1,10 @@
+node_modules/
+runtime/
+.env
+.env.*
+!.env.example
+*.log
+*.pid
+tmp/
+.DS_Store
+Thumbs.db
