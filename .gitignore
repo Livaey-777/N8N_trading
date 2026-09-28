@@ -8,3 +8,6 @@ runtime/
 tmp/
 .DS_Store
 Thumbs.db
+
+# Local backups (contain chat ids and encrypted n8n credentials): never commit
+backups/

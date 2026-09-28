@@ -73,8 +73,10 @@ is unit-tested and executed. The running n8n instance is the source of truth; th
 ## Quick start
 
 * Local pilot and Docker 24/7: [DEPLOYMENT.md](DEPLOYMENT.md)
+* Server (n8n Web) deployment package: [deploy/n8n-web/README.md](deploy/n8n-web/README.md)
 * Telegram bot & message formats: [TELEGRAM.md](TELEGRAM.md)
 * Latest verification results: [TEST_REPORT.md](TEST_REPORT.md)
+* Scheduled runs + AI fallback health from what the live instance recorded (read-only): `node tools/verify-live.js`
 
 ```bash
 npm install

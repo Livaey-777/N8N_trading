@@ -15,8 +15,9 @@ const { ROOT, loadEnv } = require('./env');
 function client(database) {
   const env = loadEnv();
   const { Client } = require('pg');
+  // The process environment wins for the target (e.g. GI_PG_HOST=postgres inside the Compose network).
   return new Client({
-    host: env.GI_PG_HOST, port: Number(env.GI_PG_PORT), user: env.GI_PG_USER,
+    host: process.env.GI_PG_HOST || env.GI_PG_HOST, port: Number(process.env.GI_PG_PORT || env.GI_PG_PORT), user: env.GI_PG_USER,
     password: env.GI_PG_PASSWORD, database: database || env.GI_PG_DATABASE,
   });
 }

@@ -9,12 +9,18 @@ output is validated and anything it cannot support is rejected.
 Configured in `.env` → `OPENROUTER_PRIMARY_MODEL`, `OPENROUTER_SECONDARY_MODEL`, `OPENROUTER_TERTIARY_MODEL`
 (an empty value falls back to the same position of `GI_AI_MODELS`):
 
-| Rank | Model | Verified (2026-09-27, `GET https://openrouter.ai/api/v1/models`) |
+| Rank | Model | Verified (2026-09-28, live pilot) |
 |---|---|---|
-| PRIMARY | `nvidia/nemotron-3-super-120b-a12b:free` | listed, prompt/completion price 0, 262k context, `response_format` + `structured_outputs` |
-| SECONDARY | `google/gemma-4-31b-it:free` | listed, price 0, 262k context, `response_format` |
-| TERTIARY | `qwen/qwen3.8-27b:free` | listed, price 0, 262k context, `structured_outputs` |
+| PRIMARY | `inclusionai/ling-3.0-flash-fin:free` | listed and free; live HTTP 200 (event analysis, 🔮 BIGGEST SCENARIOS) |
+| SECONDARY | `nvidia/nemotron-3-ultra-550b-a55b:free` | listed and free; live HTTP 200 as fallback after a primary 400; upstream 429s / invalid output seen later |
+| TERTIARY | `poolside/laguna-s-2.1:free` | listed and free; upstream 429s / invalid output seen |
 | FALLBACK | deterministic analyst (`src/lib/analyst.js`) | always available, no network |
+
+This chain is set in `.env.example`. The built-in default in `src/lib/config.js` (used only when neither
+`OPENROUTER_*_MODEL` nor `GI_AI_MODELS` is set) is still the earlier chain
+(`nvidia/nemotron-3-super-120b-a12b:free`, `google/gemma-4-31b-it:free`, `qwen/qwen3.8-27b:free`); it was left
+unchanged so the deployed workflow JSON stays identical to the live-verified build. Always set the variables.
+Current per-model health from recorded requests: `node tools/verify-live.js` (sends no request).
 
 Free availability changes without notice. The **Health Monitor re-checks the list hourly** (public
 models endpoint, no key needed) and reports `AI: DEGRADED — model(s) no longer available/free`

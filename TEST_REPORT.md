@@ -1,5 +1,10 @@
 # Test report — FINAL LIVE PILOT
 
+> **2026-09-28 17:10 UTC — cloud session.** The three remaining live checks (first scheduled PRE_EVENT, first scheduled
+> DAILY_REPORT, AI fallback health) are **NOT VERIFIED**: the cloud session cannot reach the owner's PC. They are read with
+> `node tools/verify-live.js` on the PC. A throwaway cloud replica proved the scheduled paths in real n8n 1.117.2 up to
+> Telegram delivery (no token there), and tested the deployment package and rollback. See the last section.
+>
 > **2026-09-28 03:30 UTC — READY (local live pilot).** Live OpenRouter, usage tracking, Telegram delivery, the owner's
 > commands and buttons, 🔮 BIGGEST SCENARIOS with a real AI explanation and the calibrated-probability output are verified;
 > `npm test` 105/105, validation PASSED, `check-sql` 11/11, secret scan CLEAN. See the last two sections. The historical
@@ -119,3 +124,24 @@ Observation: on the free tier, SECONDARY/TERTIARY were rate-limited or produced 
 OVERALL) DEGRADED although PRIMARY is healthy; the deterministic engine covers every failure. One AI wording nuance seen: the
 BIGGEST explanation called the hot-print scenario's support "the weakest" while the base case had less (INSUFFICIENT) — a
 qualitative comparison the factuality guard does not check; no numbers were invented.
+
+## Cloud session: replica + deployment package (2026-09-28)
+
+Environment: cloud container, `docker compose -p gi-replica` from this repository (n8n 1.117.2 + postgres:16-alpine), no
+Telegram/OpenRouter secrets, no internet (data sources DEGRADED as designed). Replica-only settings: daily hours 18:00,
+lookahead 48 h, one PCE release fixture (30 Sep 12:30 UTC, the time from the live BEA calendar).
+**These results support the live checks; they do not replace them.**
+
+| Component | Result | Evidence |
+|---|---|---|
+| Scheduled PRE_EVENT (replica) | **PASS up to delivery**; delivery NOT RUN (no token) | exec #117 `trigger`/`success` 17:00:19 UTC = 18:00 local → PRE_EVENT_DAILY, forecast #1 PCE stored, message logged `NOT_CONFIGURED`; refresh #113 excluded |
+| Scheduled DAILY_REPORT (replica) | **PASS up to delivery**; delivery NOT RUN (no token) | exec #124 `trigger`/`success` → DAILY_SCHEDULED OK, analysis #7, calibration 66 cells / 24 CALIBRATED |
+| `tools/verify-live.js` | **PASS** | verdicts FAIL (Telegram NOT_CONFIGURED) for both, which is correct; manual/refresh runs never counted; unit-tested (4 tests) |
+| Rollback R1 / R2 | **PASS** | CLI import deactivates workflows (found, runbook + DEPLOYMENT.md fixed); restore from `backup.sh` returns to the backup state, schedules resume |
+| Secret scan (Compose network) | **PASS** | CLEAN |
+| AI fallback health | **NOT VERIFIED** | no recorded requests in the replica (no key); openrouter.ai is also blocked by the cloud sandbox |
+| Unit tests | **PASS** | 109/109 |
+| Workflow validation / rebuild | **PASS** | validation PASSED; rebuild byte-identical |
+
+Defects fixed: IPv6-less hosts crash-looped n8n (`N8N_LISTEN_ADDRESS=0.0.0.0`); `.env.example` named the old model chain;
+DEPLOYMENT.md's workflow-update command left every schedule inactive; image override for blocked registries (`N8N_IMAGE`).

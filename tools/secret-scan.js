@@ -19,7 +19,8 @@ const env = loadEnv();
 const secrets = KEYS.map((k) => [k, String(env[k] || '').trim()]).filter(([, v]) => v.length >= 12);
 // The Telegram bot token's secret half is also searched on its own (URLs may split it).
 if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_BOT_TOKEN.includes(':')) secrets.push(['TELEGRAM_BOT_TOKEN(secret part)', env.TELEGRAM_BOT_TOKEN.split(':')[1]]);
-const SKIP_DIRS = new Set(['node_modules', '.git', 'pgdata']);
+// backups/: compressed pg_dump files (git-ignored, mode 700) — not searchable as text.
+const SKIP_DIRS = new Set(['node_modules', '.git', 'pgdata', 'backups']);
 const findings = [];
 // Expected locations: n8n keeps its own encryption key in its settings file (git-ignored runtime dir).
 const ALLOWED = [[path.join('runtime', 'n8n', '.n8n', 'config'), 'N8N_ENCRYPTION_KEY']];

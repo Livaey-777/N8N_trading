@@ -1,11 +1,103 @@
 # Continuation state — Gold Intelligence (n8n)
 
-## HANDOFF (read first)
+## HANDOFF (read first) — updated 2026-09-28 by a cloud session
 
-**CURRENT STATUS: LOCAL LIVE PILOT VERIFIED** (2026-09-28)
+**CURRENT STATUS: LOCAL LIVE PILOT VERIFIED · 3 LIVE CHECKS NOT YET VERIFIED · DEPLOYMENT PACKAGE PREPARED
+(NOT PRODUCTION-READY)**
 
-Repository: https://github.com/Livaey-777/N8N_trading (branch `main`). The commit that contains this section is the
-verified baseline: `git log -1 --format=%H -- docs/CONTINUATION_STATE.md`.
+Baseline: `05babb7` (the verified local live pilot). The cloud session worked on branch `claude/pensive-ritchie-1tp4df`.
+It had **no access to the owner's PC**: only the cloud environment exists, with no bridge to the PC, and the local
+n8n and PostgreSQL listen on 127.0.0.1. So the three remaining live checks could not be read from here.
+It built a read-only tool that reads them from the live instance and tested it on a throwaway replica.
+
+| Remaining live check | Status | How to verify |
+|---|---|---|
+| First scheduled PRE_EVENT (06:00 Africa/Casablanca = 05:00 UTC) | **NOT VERIFIED** (no access) | owner: `node tools/verify-live.js` on the PC |
+| First scheduled DAILY_REPORT (07:00 Africa/Casablanca = 06:00 UTC) | **NOT VERIFIED** (no access) | same command |
+| AI fallback health (PRIMARY / SECONDARY / TERTIARY) | **NOT VERIFIED** (no access). Last recorded state (03:24 UTC): PRIMARY HEALTHY; SECONDARY and TERTIARY DEGRADED (upstream 429 / invalid output) | same command |
+
+**Exact next step.** The owner runs, in the project folder on the PC, with the local n8n + PostgreSQL running:
+```
+git pull            (or fetch the branch above)
+node tools/verify-live.js --days=2
+```
+and pastes the output. It contains no secret (values are redacted, chat ids and message text are never
+selected). It sends no OpenRouter or Telegram request and writes nothing: the sessions are read-only.
+
+**What `tools/verify-live.js` decides:**
+* a run counts as scheduled only with n8n `mode = 'trigger'` and a start within −5/+20 min of the slot. A run
+  started from the editor through the "⏱ Daily …" trigger also writes a PRE_EVENT_DAILY / DAILY_SCHEDULED job
+  row, so the job name alone proves nothing;
+* per run: the execution id, n8n status and job row, the forecasts or report stored, the Telegram rows
+  (SENT + message id) and duplicates (the same dedup key SENT twice, or two scheduled runs in one slot);
+* no slot run: it tells "n8n was not running at the slot" (no trigger executions within ±30 min) apart from
+  "the trigger did not fire";
+* PRE_EVENT with nothing due inside the 36 h lookahead: an empty run is correct and reads
+  `PASS (nothing due)`; forecast delivery is then not exercised by that run;
+* per model: successes and failures, last success and last failure, failure types, rate-limit evidence
+  (HTTP 429, headers, retry-after), fallback use, the health record, the current health (the same
+  `modelHealth()` as `/status`) and the degradation (NONE / TEMPORARY / PERSISTENT / UNDETERMINED, with the
+  rule applied).
+
+Owner actions still open: regenerate the Telegram bot token and the OpenRouter key (pasted in a chat), after the
+checks. Then decide the server (§ n8n Web below).
+
+### Cloud replica test (2026-09-28 16:10–17:10 UTC) — supporting evidence, NOT the live checks
+
+This was a throwaway `docker compose -p gi-replica` stack in the cloud container, built from this repository. It
+had no Telegram/OpenRouter secrets and no internet: the sandbox proxy is reachable from the host only, so the data
+sources failed and were handled as DEGRADED. Replica-only settings:
+* `GI_PREEVENT_DAILY_HOUR=18` and `GI_DAILY_REPORT_HOUR=18`;
+* `GI_PREEVENT_LOOKAHEAD_HOURS=48`;
+* one `macro_releases` fixture: PCE on 30 Sep 12:30 UTC, the time recorded by the live BEA calendar.
+
+| Check | Result | Evidence |
+|---|---|---|
+| Scheduled PRE_EVENT path | **PASS except delivery** | execution #117 `mode=trigger` `success` at 17:00:19 UTC (= 18:00 Africa/Casablanca) → job PRE_EVENT_DAILY; due 1 → forecast #1 PCE stored (UNDETERMINED: calendar unverifiable offline, reason recorded); message composed + logged; Telegram `NOT_CONFIGURED` (no token in the replica) → the tool correctly reports FAIL. Refresh #113 at the same minute was told apart and not counted |
+| Scheduled DAILY_REPORT path | **PASS except delivery** | execution #124 `trigger` `success` at 17:00:45 UTC → job DAILY_SCHEDULED OK; report analysis #7 stored; calibration rebuilt: 66 cells, 24 CALIBRATED (same as the live pilot); Telegram `NOT_CONFIGURED` → FAIL (correct) |
+| Duplicates / errors | PASS | no duplicate dedup key SENT, one scheduled run per slot, 0 error_events, every execution `success` |
+| `tools/verify-live.js` | PASS | correct verdicts on real trigger executions; manual / refresh runs excluded; 0 false redactions after a fix |
+| Rollback R1 (re-import) | PASS after a doc fix | **`n8n import:workflow` deactivates the imported workflow** (active t → f, verified). Re-activation + restart → all 6 active. DEPLOYMENT.md's update command lacked the re-activation and would have stopped every schedule; fixed |
+| Rollback R2 (restore) | PASS | `backup.sh` → 2 non-empty dumps; restore → forecasts 1→0, job rows 14→1, executions 39→3 (the 16:25 state), 362 reactions, 6 workflows re-activated, Health ran on schedule at 17:05 |
+| Secret scan in the Compose network | PASS | `verify.sh --secret-scan`: CLEAN (files + both databases) |
+| Memory | info | n8n ≈ 300 MB, PostgreSQL ≈ 70 MB after the 17:00 burst |
+
+Defects found and fixed in this session (deployment and tooling only; no workflow or engine change, and the
+workflow JSON is byte-identical to the live-verified build):
+1. `docker-compose.yml`: n8n crash-looped on a host without IPv6 ("n8n's address '::' is not available") →
+   `N8N_LISTEN_ADDRESS=0.0.0.0`, still published on 127.0.0.1 only.
+2. `docker-compose.yml`: the image can be overridden (`N8N_IMAGE`), because `docker.n8n.io` was unreachable from
+   the test host; Docker Hub `n8nio/n8n:1.117.2` worked.
+3. `.env.example` still named the earlier model chain (nemotron-super / gemma / qwen). A server built from it would
+   not run the verified chain → now Ling / Nemotron Ultra / Laguna. `AI_MODELS.md` updated; the fallback string in
+   `src/lib/config.js` was left unchanged on purpose (changing it would regenerate all 9 workflow files).
+4. DEPLOYMENT.md's "update workflows from files" command left every workflow inactive (see R1) → fixed.
+5. `tools/db.js` honours `GI_PG_HOST` / `GI_PG_PORT` from the process environment (Compose network). `tools/secret-scan.js`
+   skips `backups/` (compressed dumps, not text). `backups/` is git-ignored.
+
+Tests: `npm test` **109 / 109** (105 + 4 for the verification tool). `node tools/validate-workflows.js` PASSED.
+Rebuilding the workflows leaves no diff.
+
+### n8n Web deployment package
+
+Runbook: [deploy/n8n-web/README.md](../deploy/n8n-web/README.md). It covers the target, the 9 workflows with their
+import order and method, the credential placeholders, database requirements, deployment steps with cutover,
+a verification checklist, rollback R1–R3 and operations. It adds `backup.sh`, `verify.sh` and
+`credentials.template.json`.
+
+Two decisions are recorded there:
+* "n8n Web" = **self-hosted n8n 1.117.2 on a VPS**, with the editor over HTTPS.
+* **n8n Cloud is not supported as-is**:
+  * 35 Code nodes read secrets and settings from `$env`;
+  * workflow ids are fixed;
+  * the schedules start about 105 000 executions per 30 days, 86 400 of them from the 30 s bot poll.
+
+Only one instance may run the schedules at a time: stop the local pilot before the server starts.
+
+## Previous handoff (2026-09-28 03:30 UTC, local session)
+
+Repository: https://github.com/Livaey-777/N8N_trading (branch `main`). Verified baseline commit:
+`05babb79a0625f2dc4cab0e6b4aa424d092bf68c`.
 
 **VERIFIED (live, local n8n 1.117.2 + PostgreSQL):**
 - infrastructure: n8n, PostgreSQL;
@@ -183,16 +275,22 @@ OVERALL DEGRADED only because the free SECONDARY and TERTIARY models failed earl
 HEALTHY again; ERRORS OK (0 in the last hour); pipelines, market data, Telegram, database OK. DAILY_REPORT / PRE_EVENT: no scheduled
 run yet (first at 07:00 / 06:00 Africa/Casablanca).
 
-## Remaining
+## Remaining (updated 2026-09-28, cloud session)
 
-1. Observe the first scheduled Pre-Event (06:00) and Daily Report (07:00, Africa/Casablanca) deliveries; both were run manually before.
-2. Owner: regenerate the credentials that were pasted into the chat (BotFather /revoke → new token; new OpenRouter key), then
+1. **Owner: run `node tools/verify-live.js --days=2` on the PC** and paste the output. It verifies the first scheduled
+   PRE_EVENT (06:00) and DAILY_REPORT (07:00, Africa/Casablanca) runs and the AI fallback health from recorded data.
+   If the PC or n8n was off at a slot, the tool says so; the next slot is the next day.
+2. Fix only real defects the output shows; otherwise stop changing core logic.
+3. Owner: regenerate the credentials that were pasted into the chat (BotFather /revoke → new token; new OpenRouter key), then
    `tools\set-secrets.ps1` and `node tools/n8n-local.js restart`. Never add a second key to raise quota.
-3. Optional capacity: free models are often rate-limited upstream; raise AI_MAX_REQUESTS_HOUR within the 50/day provider limit,
+4. Optional capacity: free models are often rate-limited upstream; raise AI_MAX_REQUESTS_HOUR within the 50/day provider limit,
    choose other free models, or buy ≥ 10 OpenRouter credits (1 000 free requests/day).
-4. Server deployment with Docker Compose (smoke-tested PASS).
-5. Owner may delete the six empty Docker placeholder directories (see Docker smoke test).
+5. Server deployment with [deploy/n8n-web/README.md](../deploy/n8n-web/README.md) (self-hosted VPS). Checklist items 10–12 must
+   pass on the server before it is called production-ready.
+6. Owner may delete the six empty Docker placeholder directories (see Docker smoke test).
 
 ## Exact next action
 
-After 07:00 Africa/Casablanca: confirm the scheduled PRE_EVENT and DAILY_REPORT runs in /status and the delivered messages.
+Owner runs `node tools/verify-live.js --days=2` on the PC (local n8n + PostgreSQL running) and shares the output.
+A new Claude session reads the SUMMARY block: PRE_EVENT / DAILY_REPORT = PASS · PASS (nothing due) · FAIL · NOT VERIFIED,
+and one line per AI model with its current health and degradation (TEMPORARY / PERSISTENT).

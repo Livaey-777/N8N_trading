@@ -71,6 +71,9 @@ node tools/n8n-api.js push workflows/*.json     # updates the running instance i
 
 ## B. 24/7 with Docker Compose
 
+Server deployment runbook (import order, credential placeholders, database requirements, rollback, verification
+checklist): [deploy/n8n-web/README.md](deploy/n8n-web/README.md).
+
 ```bash
 cp .env.example .env
 # set GI_PG_PASSWORD and N8N_ENCRYPTION_KEY (long random values), then the secrets
@@ -101,7 +104,7 @@ Operations
 | status / health | `docker compose ps` (healthchecks) · Telegram `/status` |
 | logs | `docker compose logs -f n8n` |
 | after changing `.env` | `docker compose up -d --force-recreate n8n` |
-| update workflows from files (overwrites UI edits!) | `docker compose run --rm --entrypoint n8n n8n-bootstrap import:workflow --separate --input=/gi/workflows` then restart `n8n` |
+| update workflows from files (overwrites UI edits!) | `docker compose run --rm --entrypoint n8n n8n-bootstrap import:workflow --separate --input=/gi/workflows`, then **re-activate the six scheduled workflows** (the import deactivates them) with `update:workflow --id=<id> --active=true`, then restart `n8n` — exact commands in [deploy/n8n-web/README.md](deploy/n8n-web/README.md) §9 R1 |
 | backup the data store | `docker compose exec postgres pg_dump -U gold_intel gold_intel > backup.sql` |
 | export workflows (backup of the source of truth) | `docker compose exec n8n n8n export:workflow --all --separate --output=/home/node/.n8n/export` |
 | stop | `docker compose down` (volumes kept) |

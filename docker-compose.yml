@@ -27,6 +27,8 @@ x-n8n-env: &n8n-env
   GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-Africa/Casablanca}
   TZ: ${TZ:-Africa/Casablanca}
   N8N_PORT: "5678"
+  # IPv4 bind: n8n's default "::" crash-loops on hosts without IPv6. The port is published on 127.0.0.1 only.
+  N8N_LISTEN_ADDRESS: ${N8N_LISTEN_ADDRESS:-0.0.0.0}
   N8N_HOST: ${N8N_HOST:-localhost}
   N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
   N8N_EDITOR_BASE_URL: ${N8N_EDITOR_BASE_URL:-http://localhost:5678}
@@ -72,7 +74,7 @@ services:
   # then activates the scheduled workflows. Later boots are no-ops, so edits made in the n8n UI
   # (the source of truth) are never overwritten. The workflow JSON files are backups.
   n8n-bootstrap:
-    image: docker.n8n.io/n8nio/n8n:1.117.2
+    image: ${N8N_IMAGE:-docker.n8n.io/n8nio/n8n:1.117.2}
     restart: "no"
     env_file: .env
     environment: *n8n-env
@@ -86,7 +88,7 @@ services:
         condition: service_healthy
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n:1.117.2
+    image: ${N8N_IMAGE:-docker.n8n.io/n8nio/n8n:1.117.2}
     restart: unless-stopped
     env_file: .env
     environment: *n8n-env
