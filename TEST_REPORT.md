@@ -1,5 +1,10 @@
 # Test report — FINAL LIVE PILOT
 
+> **2026-09-28 18:45 UTC — FINAL IMPORT-READY PACKAGE.** `deploy/n8n-final/` with `import-all.sh` / `import-all.ps1`.
+> Fresh imports PASS: Docker with an editor-created credential, Docker bootstrap, repeat import, Windows local pilot
+> under PowerShell. Without the credential the import fails safe. Imported bot: 54/54 commands and buttons, `/brief`
+> in the final structure. Tests 113/113, validation 9/9, SQL 11/11, secret scans CLEAN. See VERIFICATION.md §A.
+>
 > **2026-09-28 17:45 UTC — cloud session (second pass).** `/brief` implemented and verified through the real bot
 > workflow. Regression: tests 113/113, validation 9/9, SQL 11/11, bot 55/55 (31 commands + 24 buttons), gitleaks history
 > clean. The final package `deploy/n8n-final/` passed its audit and a real CLI import on a fresh instance. The live release

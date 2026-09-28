@@ -1,6 +1,37 @@
 # Continuation state — Gold Intelligence (n8n)
 
-## HANDOFF (read first) — updated 2026-09-28 17:45 UTC by a cloud session
+## HANDOFF (read first) — updated 2026-09-28 18:45 UTC: FINAL IMPORT-READY PACKAGE
+
+**Read [docs/FINAL_HANDOFF.md](FINAL_HANDOFF.md) first.** `deploy/n8n-final/` is the final package:
+* 9 workflows;
+* CREDENTIAL_SETUP.md, CREDENTIALS.md, DATABASE.md, IMPORT_ORDER.md, VERIFICATION.md, ROLLBACK.md;
+* PACKAGE_MANIFEST.txt;
+* verify-package.sh/.js, check-import.js, import-all.sh (Docker) and import-all.ps1 (Windows local pilot).
+
+**Credential architecture:**
+* **GI Postgres** is one n8n credential for all 27 Postgres nodes. The import re-links by name when the id
+  `GIpostgresCred01` does not exist (n8n `replaceInvalidCredentials`, verified with editor-created credentials).
+* Telegram and OpenRouter stay environment variables in `.env`. Code nodes cannot read n8n credentials, and
+  moving them would mean rebuilding the router / sender.
+
+**Fresh import tests, all PASS (VERIFICATION.md §A):**
+* Docker with an editor credential, re-run with the final files;
+* Docker without a credential: fails safe, 0 imported;
+* repeat import;
+* Docker new-server bootstrap;
+* Windows local pilot under PowerShell (tools/local-pg.js + tools/n8n-local.js), re-run with the final files;
+* 54/54 commands and buttons through the imported bot, including `/brief` in the final structure;
+* Telegram / OpenRouter CONFIGURED wiring;
+* SQL 11/11 and secret scan CLEAN on the imported instance.
+
+Tests 113/113, validation 9/9.
+
+**Still open (only on the real instance):**
+* the first scheduled 06:00 PRE_EVENT / 07:00 DAILY_REPORT and the AI health with the real bot and key:
+  `node tools/verify-live.js --days=2`;
+* regenerate the Telegram token and the OpenRouter key.
+
+## Earlier handoff (2026-09-28 17:45 UTC, cloud session)
 
 **CURRENT STATUS: LOCAL LIVE PILOT VERIFIED · /brief IMPLEMENTED · FINAL PACKAGE `deploy/n8n-final/` BUILT AND
 IMPORT-TESTED · RELEASE GATE PENDING (3 live checks on the owner's PC) · NOT PRODUCTION-READY**

@@ -1,50 +1,54 @@
 # Rollback — Gold Intelligence n8n package
 
-**R0 — before every import or change.** Create a rollback point and keep `.env`, which holds `N8N_ENCRYPTION_KEY`:
+Every run of the import helper creates a rollback point first (step 5) and changes nothing before it:
+* Docker: `backups/<UTC>/` with `gold_intel.dump`, `n8n.dump` and `meta.txt` (commit + image ids);
+* Windows local pilot: `backups\<UTC>\workflows-before-import.json`, n8n's export of every workflow as it was.
+
+`backups/` is git-ignored. Keep `.env`: the `n8n` dump and the stored credential can only be read with the same
+`N8N_ENCRYPTION_KEY`. Tested on 2026-09-28: restore returned both databases to the backup state, and the schedules
+resumed.
+
+## R1 — go back to the previous workflows (instance otherwise fine)
+
+**Simplest:** check out the previous package and run the helper again:
 ```sh
-sh deploy/n8n-web/backup.sh      # Compose: backups/<UTC>/ with gold_intel.dump, n8n.dump, meta.txt (commit + image ids)
+git checkout <previous commit> -- deploy/n8n-final/
+sh deploy/n8n-final/import-all.sh                                     # Docker
+powershell -ExecutionPolicy Bypass -File deploy\n8n-final\import-all.ps1   # Windows local pilot
+git checkout HEAD -- deploy/n8n-final/                                # afterwards, back to the current files
 ```
-Existing PostgreSQL: `pg_dump -Fc -U <GI_PG_USER> gold_intel > gold_intel.dump` and the same for `n8n`.
-Tested on 2026-09-28: backup → restore returned both databases to the backup state, and the schedules resumed.
 
-## R1 — a workflow misbehaves (instance otherwise fine)
-
-Re-import the previous package's workflow files and **activate again**: n8n's import deactivates every
-imported workflow (verified).
-```sh
-git checkout <previous commit> -- deploy/n8n-final/workflows/
-cd deploy/n8n-final
-for f in 09-error-handler 03-telegram-sender 02-ai-analyst 08-health-monitor 01-master-pipeline \
-         04-pre-event 05-post-event 06-daily-report 07-telegram-bot; do n8n import:workflow --input="workflows/$f.json"; done
-for id in giHealthMonitor1 giMasterPipeline giPreEventEngine giPostEventRevw1 giDailyReport001 giTelegramBot001; do
-  n8n update:workflow --id="$id" --active=true
-done
-# restart n8n → "Start Active Workflows" must list all six
-cd ../.. && git checkout HEAD -- deploy/n8n-final/workflows/
+**Windows local pilot, from the rollback point:**
 ```
-On Compose, prefix each `n8n …` with `docker compose run --rm --entrypoint n8n n8n-bootstrap` and mount the files,
-or use the commands in [../n8n-web/README.md](../n8n-web/README.md) §9 R1.
+node tools\n8n-local.js stop
+node tools\n8n-local.js cli import:workflow --input=backups\<UTC>\workflows-before-import.json
+node tools\n8n-local.js cli update:workflow --id=giHealthMonitor1 --active=true
+```
+Repeat the last line for `giMasterPipeline giPreEventEngine giPostEventRevw1 giDailyReport001 giTelegramBot001`,
+then run `node tools\n8n-local.js start`. The import deactivates everything, which is why the six are activated
+again.
 
-## R2 — the deployment misbehaves (return to the last backup)
+## R2 — go back to the backup (Docker: databases and workflows)
 
 ```sh
 docker compose stop n8n
-B=backups/<timestamp>
+B=backups/<UTC>
 docker compose exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists' < $B/gold_intel.dump
 docker compose exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d "${N8N_DB_DATABASE:-n8n}" --clean --if-exists' < $B/n8n.dump
 git checkout "$(sed -n 's/^commit=//p' $B/meta.txt)"
 docker compose up -d
 ```
-Then check that the start log lists six activated workflows and that Health runs on schedule.
+Then check that the n8n log lists six `Activated workflow` lines and that Health Monitor runs on schedule.
 
-## R3 — abandon the server, back to the local pilot
+## R3 — leave the server, back to the local pilot
 
-1. On the server: `docker compose stop n8n`. Do this **first**; never run both instances at once.
-2. On the PC: `node tools/n8n-local.js start`, then `/status` from the phone.
+1. On the server: `docker compose stop n8n`. Do this **first**; never run two instances at once.
+2. On the PC: `node tools\n8n-local.js start`, then `/status` from the phone.
 3. Keep the server volumes (`docker compose down` without `-v`) until the cause is known.
 
 ## Never
 
 * `docker compose down -v`: it deletes both databases.
-* Editing the workflows in the editor and then re-importing files: the import overwrites the editor's changes.
-* Creating the GI Postgres credential in the editor: the new id breaks every Postgres node.
+* The editor's "Import from file": it creates new workflow ids and breaks the links between workflows.
+* A second credential named **GI Postgres**: the import could not tell which one to link.
+* Editing workflows in the editor and then re-importing: the import overwrites the editor's changes.

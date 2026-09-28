@@ -49,10 +49,36 @@ docker run --rm --network gold-intelligence_default -v "$PWD":/app:ro -w /app -e
   -e NODE_PATH=/usr/local/lib/node_modules/n8n/node_modules --entrypoint node docker.n8n.io/n8nio/n8n:1.117.2 tools/check-sql.js
 ```
 
-## 4. Operation
+## 4. Connection fields (credential "GI Postgres")
+
+| Field | Docker server | Windows local pilot |
+|---|---|---|
+| Host | `postgres` (Compose network name) | `127.0.0.1` |
+| Port | `5432` | `5433` (embedded PostgreSQL, `tools/local-pg.js`) |
+| Database | `gold_intel` | `gold_intel` |
+| User | `GI_PG_USER` (default `gold_intel`) | same |
+| Password | `GI_PG_PASSWORD` from `.env` (never in the package) | same |
+| SSL | `Disable` on the private network | `Disable` |
+
+n8n's own database (`n8n`) uses the same server and user. It is configured through the environment
+(`DB_POSTGRESDB_*` in `docker-compose.yml` / `tools/n8n-local.js`), not through a credential.
+
+## 5. Backup and restore
+
+The existing production data is never wiped: migrations only create missing objects, and the import helpers touch
+only n8n's workflow tables.
+
+| | Docker server | Windows local pilot |
+|---|---|---|
+| Backup | `sh deploy/n8n-web/backup.sh` → `backups/<UTC>/gold_intel.dump` + `n8n.dump` (custom format) | `node tools\n8n-local.js stop` · `node tools\local-pg.js stop` · copy the folder `runtime\pgdata` to a safe place (both databases) · start both again. The embedded PostgreSQL ships no `pg_dump`, so the folder copy is the full backup |
+| Restore | see [ROLLBACK.md](ROLLBACK.md) R2 (`pg_restore --clean --if-exists`) | stop n8n and PostgreSQL as above, replace `runtime\pgdata` with the copy, start both. For workflows only: ROLLBACK.md R1 |
+
+Keep `N8N_ENCRYPTION_KEY` with the backups: the `n8n` dump (workflows, the encrypted credential) is unreadable
+without it.
+
+## 6. Operation
 
 * The database session timezone is UTC. Local-day logic uses `Africa/Casablanca` explicitly in SQL.
 * Size: about 12 MB after the seeds. n8n prunes executions after 14 days (`EXECUTIONS_DATA_MAX_AGE=336`).
-* Backup before every change and daily: `sh deploy/n8n-web/backup.sh` (both databases, custom format).
-  Keep `N8N_ENCRYPTION_KEY`: the `n8n` dump is unreadable without it.
+* Back up daily (cron example in `deploy/n8n-web/README.md` §10). The import helpers back up automatically before importing.
 * The calibration cells are rebuilt by every Daily Report run, from the stored history with fixed rules.

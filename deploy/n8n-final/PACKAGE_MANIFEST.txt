@@ -1,6 +1,6 @@
 GOLD INTELLIGENCE — n8n FINAL IMPORT PACKAGE
 Target: self-hosted n8n 1.117.2 (Docker or npm) + PostgreSQL 16. Not n8n Cloud (see IMPORT_ORDER.md).
-Built: 2026-09-28T17:44:28.620Z by tools/package-final.js from workflows/*.json (byte-identical copies).
+Built: 2026-09-28T18:43:47.047Z by tools/package-final.js from workflows/*.json (byte-identical copies).
 Secrets: none. Every secret is a placeholder in .env.example / CREDENTIALS.md.
 
 RELEASE GATE — the package may be imported for production only when all three pass on the RUNNING instance
@@ -78,19 +78,24 @@ IMPORT ORDER (dependencies first)
   9. 07-telegram-bot.json  (giTelegramBot001)
 
 FILES (sha256 · bytes · path) — checked by verify-package.sh
-3b05234a7c31c0c45d52d9d64d27200e03a8bc87ea1502a914e3949656fe4414  3836  CREDENTIALS.md
+06fe94fc29e745ae8a6680acc5793e1c32097d014061290869c9eb6669380122  4707  CREDENTIAL_SETUP.md
+604f58442e3554cc4332b27131177db180112c91ab4ae48c56cee744b1d850f3  6051  CREDENTIALS.md
 c9263093ca7e434cdee17d5b0afbaf5c8aebec5da15103c4a6e4feed870b5f4c  5126  .env.example
-fccf0ebfd80cb39b938483e899748470985804522ad022ef14d5af3191b764cd  3104  DATABASE.md
-8c5bbc61ba45ee6c972d1afe08c80f68c89dcdf07135d0e3292e8cbb250da1b6  6521  IMPORT_ORDER.md
-d08839983f22b49ff67e9f0c1ce6cdd8b75cf0b697c68bb7fe9fdd7316ebd614  5691  VERIFICATION.md
-5cbc7107e8f9e90bdffed0c00de7933ecb24f1d8b35bcf3729e7e1fbabbccea2  2648  ROLLBACK.md
-f2a0b229e5e5f2bfe2bfe4871b98322e178c7a374a126492c3395ff9746af90c  8032  verify-package.sh
+a0ac406078c8b49c0544ea3e5aa5c1803010b681d15789bd46068c5bfea582f7  4623  DATABASE.md
+6f885175367f856c7564fb5aa7132d80dc416687b3cbee24b669d082a5a8bf82  7000  IMPORT_ORDER.md
+3dd8a7169d1aa684ee525fcd5b849d7eff5532cfdf0bdf7773f8446485449a58  5448  VERIFICATION.md
+42b3f41cc4001346b9935dd523cc518e0dfc5a644768cc54dcb29defe9ef0336  2823  ROLLBACK.md
+eabd5ed32f5609c40623ad266c0e024211d78142ef8b82640a2b6c117ad0cfd4  297  verify-package.sh
+557b475d6b79d1adb75f848727a2515fb50243113380929512120e78b4cbc1cd  8150  verify-package.js
+29f7910a7fae2888700725fe0b9db14867304a5be5fc6d5e715652b2877ab4ce  7129  import-all.sh
+9d440519ecbb51c4a3d14a18e328ae849d8038dd5886a550d9d58c4c3e6cc861  7996  import-all.ps1
+9dd04e4d618c05f25de2c24625340909a2eb24b0d4787c9b8e4d9acfbb0cf598  6812  check-import.js
 c94f69dbfddba0558c4d4d5fa8a3557f7906dbc901ef30b124e7c6ea0fb73a19  586660  workflows/01-master-pipeline.json
 a5595e9e2a90c83953b6de3b82b0443adab4e3277cbe4e9930eb6b8a294859ca  369858  workflows/02-ai-analyst.json
 ff93f9d2dafaae36ffbb888553d8d80b6cc8218f6d834c00d5f519fd5b0e6943  152724  workflows/03-telegram-sender.json
 8392056665f8559625f8871e9abfb6bcc6bc480d70681236e6cacd9013733367  333950  workflows/04-pre-event.json
 efe15935b1f569a1c33da82e9cc90183673cd3bc932970aa9ca50327c90561fc  236206  workflows/05-post-event.json
 2a8637ab5254bc94fb281e1923b970967fe64f4a30bdf4742b74ec99b5f34ae8  461219  workflows/06-daily-report.json
-ec743b03e20a0e2b8a12a7d41a5402f89e385ce9288b7791009287158ab24398  633437  workflows/07-telegram-bot.json
+490dfed7455937bc3a89f23a89d7c1ae01fdf0af443680998b4a3c6551bd513b  633395  workflows/07-telegram-bot.json
 d841e4ea6474698a4de8b0915b1179c12eba4512b601c6f9eec8c00bb3eca6aa  284400  workflows/08-health-monitor.json
 cc34b16e600b7c1df4620ac6bca89cc9fcac4b9cb3e7aa72af85bade52cd1849  116733  workflows/09-error-handler.json

@@ -164,7 +164,7 @@ function briefProbabilityLines(title, p, row) {
       : /walk-forward/.test(p.reason || '') ? 'failed walk-forward validation' : p.reason || 'not calibrated';
     return [b(title), `Bullish / Bearish / Neutral: UNAVAILABLE — ${esc(why)}`, conf, 'Evidence: INSUFFICIENT'];
   }
-  return [b(title), `Bullish: ${p.bullish_pct}%`, `Bearish: ${p.bearish_pct}%`, `Neutral: ${p.neutral_pct}%`, conf,
+  return [b(title), `🟢 Bullish: ${p.bullish_pct}%`, `🔴 Bearish: ${p.bearish_pct}%`, `⚪ Neutral: ${p.neutral_pct}%`, conf,
     `Evidence: ${esc(p.evidence)} · n=${p.n}${p.market_state ? ` · market ${esc(p.market_state.toLowerCase())}` : ''}`];
 }
 
@@ -194,31 +194,35 @@ function formatBrief(desk, state, ranked, next, tz, extra = {}) {
     `📋 ${b('GOLD BRIEF')}`,
     esc(localTime(new Date().toISOString(), tz)),
     '',
-    `🥇 ${b('GOLD')} ${g ? `${esc(g.value)} (24h ${esc(signed(g.change_24h_pct))}%)` : 'unavailable'}`,
+    `🥇 ${b('GOLD:')} ${g ? `${esc(g.value)} (24h ${esc(signed(g.change_24h_pct))}%)` : 'unavailable'}`,
     `${b('REGIME:')} ${esc(desk.regime)}`,
     '',
     `📊 ${b('CALIBRATED PROBABILITY')}`,
+    '',
     ...briefProbabilityLines('NEXT 1 DAY', probs.SHORT, row('SHORT')),
+    '',
     ...briefProbabilityLines('NEXT 5 DAYS', probs.TACTICAL, row('TACTICAL')),
     '',
     `🧭 ${b('BIAS')}`,
     ...view.map((r) => `${esc(r.horizon)}: ${ICON[r.direction] || ''} ${esc(r.direction)} · score ${esc(signed(r.score))}`),
     '',
-    `🎯 ${b('MAIN DRIVER:')} ${esc(desk.dominant_driver || 'none')}`,
+    `🎯 ${b('MAIN DRIVER')}`,
+    esc(desk.dominant_driver || 'none'),
     `${b('Counter:')} ${esc(desk.counter_driver || 'none')}`,
     '',
     `🔥 ${b('TOP SCENARIOS')}`,
     ...(scen.length ? scen : ['none — no active pre-event forecasts in the next 7 days']),
     '',
-    `📅 ${b('NEXT EVENT:')} ${esc(next ? `${next.label} — ${localTime(next.scheduled_at, tz)} (${untilText(next.scheduled_at)})` : 'none scheduled in the next 7 days')}`,
+    `📅 ${b('NEXT:')} ${esc(next ? `${next.label} — ${localTime(next.scheduled_at, tz)} (${untilText(next.scheduled_at)})` : 'none scheduled in the next 7 days')}`,
     `${b('PRE-EVENT:')} ${fc ? `${ICON[fc.forecast_state] || ''} ${esc(fc.forecast_state)} · score ${esc(signed(fc.pre_event_score))} · confidence ${esc(fc.confidence)}` : 'no forecast yet'}`,
     '',
     `✅ ${b('MARKET:')} ${esc(confirm)}`,
     '',
-    `⚠️ ${b('INVALIDATION:')} ${esc(D.invalidation(desk, extra.layers || desk.layers || {}))}`,
+    `⚠️ ${b('INVALIDATION')}`,
+    esc(D.invalidation(desk, extra.layers || desk.layers || {})),
     '',
     `📡 ${b('DATA:')} ${esc(dq ? dq.level : dqLevel || 'UNKNOWN')}${src ? ` · ${esc(src)}` : ''}${dq && dq.reasons && dq.reasons.length ? ` — ${esc(cut(dq.reasons[0], 80))}` : ''}`,
-    i('% = calibrated history only · score −100…+100 · confidence 0–100 · intelligence only, not a trade signal'),
+    i('Intelligence only — not a trade order.'),
   ].join('\n');
 }
 

@@ -43,9 +43,9 @@ test('/brief: every agreed section, in the agreed order, as one compact message'
   const cells = [cell('DESK', 'SHORT', 'BULLISH', BULLISH_SKEW, 42), cell('DESK', 'TACTICAL', 'BEARISH', BEARISH_SKEW, 42)];
   const ranked = B.withProbabilities(B.rankScenarios([forecast('PCE:1', 'PCE', 44), forecast('NFP:1', 'NFP', 100)]), []);
   const text = TD.formatBrief(desk, state, ranked, next, 'UTC', { cells, dataQuality: dq, cfg: {} });
-  const order = ['📋 <b>GOLD BRIEF</b>', '🥇 <b>GOLD</b>', 'REGIME:', '📊 <b>CALIBRATED PROBABILITY</b>', 'NEXT 1 DAY', 'NEXT 5 DAYS', '🧭 <b>BIAS</b>',
-    'SHORT:', 'TACTICAL:', 'SWING:', 'STRUCTURAL:', '🎯 <b>MAIN DRIVER:</b>', 'Counter:', '🔥 <b>TOP SCENARIOS</b>', '📅 <b>NEXT EVENT:</b>',
-    'PRE-EVENT:', '✅ <b>MARKET:</b>', '⚠️ <b>INVALIDATION:</b>', '📡 <b>DATA:</b>'];
+  const order = ['📋 <b>GOLD BRIEF</b>', '🥇 <b>GOLD:</b>', 'REGIME:', '📊 <b>CALIBRATED PROBABILITY</b>\n\n<b>NEXT 1 DAY</b>', '🟢 Bullish:', 'Confidence:', 'Evidence:',
+    '\n\n<b>NEXT 5 DAYS</b>', '🧭 <b>BIAS</b>', 'SHORT:', 'TACTICAL:', 'SWING:', 'STRUCTURAL:', '🎯 <b>MAIN DRIVER</b>\nMARKET:REAL_YIELD', 'Counter:',
+    '🔥 <b>TOP SCENARIOS</b>', '📅 <b>NEXT:</b>', 'PRE-EVENT:', '✅ <b>MARKET:</b>', '⚠️ <b>INVALIDATION</b>\ntactical BEARISH view invalidated', '📡 <b>DATA:</b>'];
   let at = -1;
   for (const want of order) {
     const k = text.indexOf(want, at + 1);
@@ -66,7 +66,7 @@ test('/brief: percentages come only from the calibrated cells; confidence is the
   const view = D.horizonView(desk, dq.level);
   const p = probSection(text);
   for (const [c, h] of [[short, 'SHORT'], [tact, 'TACTICAL']]) {
-    assert.ok(p.includes(`Bullish: ${c.bullish_pct}%\nBearish: ${c.bearish_pct}%\nNeutral: ${c.neutral_pct}%`), `${h} percentages`);
+    assert.ok(p.includes(`🟢 Bullish: ${c.bullish_pct}%\n🔴 Bearish: ${c.bearish_pct}%\n⚪ Neutral: ${c.neutral_pct}%`), `${h} percentages`);
     assert.ok(p.includes(`Confidence: ${view.find((r) => r.horizon === h).confidence}/100`), `${h} confidence`);
     assert.ok(p.includes(`Evidence: ${c.evidence} · n=42`), `${h} evidence`);
   }
@@ -95,5 +95,5 @@ test('/brief: scenario probabilities are conditional and only shown when calibra
   assert.equal(text.split('\n')[bearish + 1].trim(), `if confirmed, first hours: 🟢 ${pceCell.bullish_pct}% · 🔴 ${pceCell.bearish_pct}% · ⚪ ${pceCell.neutral_pct}% (n=42)`);
   assert.match(text, /conditional probability: unavailable/, 'uncalibrated scenarios say so');
   assert.ok(!/\b(buy|sell|entry|stop[- ]?loss|take[- ]?profit|leverage|lot size|place an order)\b/i.test(text), 'no trade execution language');
-  assert.match(text, /not a trade signal/);
+  assert.match(text, /not a trade order/);
 });

@@ -48,23 +48,51 @@ acknowledged immediately (no spinner) and is answered exactly like the typed com
 Also available: `/brief`, `/daily`, `/gold`, `/scenarios`, `/event <id>`.
 
 **📋 GOLD BRIEF (`/brief`)**: the compact desk view in one message (about 1.9 k characters). It has no menu button;
-the agreed `/start` layout is unchanged. Sections, in this order:
-1. `📋 GOLD BRIEF` and the time.
-2. `🥇 GOLD` price (24h change) and `REGIME`.
-3. `📊 CALIBRATED PROBABILITY`: **NEXT 1 DAY** (SHORT cell) and **NEXT 5 DAYS** (TACTICAL cell). Each shows
-   Bullish / Bearish / Neutral %, Confidence and Evidence.
-4. `🧭 BIAS`: SHORT, TACTICAL, SWING and STRUCTURAL, each as direction · score.
-5. `🎯 MAIN DRIVER` and Counter.
-6. `🔥 TOP SCENARIOS` 1–3 (the `/biggest` ranking), each with its conditional first-hours probability.
-7. `📅 NEXT EVENT` and `PRE-EVENT:` direction · score · confidence.
-8. `✅ MARKET` confirmation.
-9. `⚠️ INVALIDATION`.
-10. `📡 DATA` quality and sources.
+the agreed `/start` layout is unchanged. Structure (`src/lib/telegram-direction.js → formatBrief`):
+```
+📋 GOLD BRIEF
+<time>
 
-Rules (same as `/now` and `/biggest`, `src/lib/telegram-direction.js → formatBrief`):
-* percentages come only from a CALIBRATED cell; otherwise `UNAVAILABLE — <reason>` and `Evidence: INSUFFICIENT`;
-* Confidence is the deterministic 0–100 value shown as `/100`, never converted into a probability;
-* the scenario probability is conditional (if the scenario is confirmed) and shown only when calibrated;
+🥇 GOLD: <price> (24h …%)
+REGIME: …
+
+📊 CALIBRATED PROBABILITY
+
+NEXT 1 DAY
+🟢 Bullish: XX%
+🔴 Bearish: XX%
+⚪ Neutral: XX%
+Confidence: XX/100
+Evidence: <level> · n=<cases> · market <state>
+
+NEXT 5 DAYS
+(same five lines)
+
+🧭 BIAS
+SHORT / TACTICAL / SWING / STRUCTURAL: direction · score
+
+🎯 MAIN DRIVER
+<driver>
+Counter: …
+
+🔥 TOP SCENARIOS
+1.–3. kind · event · time — trigger, with the conditional first-hours probability when calibrated
+
+📅 NEXT: <event — time (in …)>
+PRE-EVENT: direction · score · confidence
+
+✅ MARKET: per-horizon confirmation
+
+⚠️ INVALIDATION
+…
+
+📡 DATA: quality · sources
+```
+Rules (same as `/now` and `/biggest`):
+* percentages only from a CALIBRATED cell (NEXT 1 DAY = SHORT cell, NEXT 5 DAYS = TACTICAL cell); otherwise
+  `Bullish / Bearish / Neutral: UNAVAILABLE — <reason>` and `Evidence: INSUFFICIENT`;
+* Confidence is the deterministic 0–100 value (`/100`), never converted into a probability;
+* scenario probabilities are conditional and shown only when calibrated;
 * no trade execution language.
 
 Only 🔮 BIGGEST SCENARIOS may call the AI; every other reply is built from stored state. Polling interval:

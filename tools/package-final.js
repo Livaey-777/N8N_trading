@@ -2,7 +2,7 @@
 /**
  * Builds deploy/n8n-final/: the 9 workflows under their package names (byte-identical copies of
  * workflows/*.json), .env.example, and PACKAGE_MANIFEST.txt (checksums, triggers, references,
- * credentials, dependency order). The Markdown documents and verify-package.sh are maintained by hand.
+ * credentials, dependency order). The documents, helpers and checkers are maintained by hand.
  *
  *   node tools/build-workflows.js && node tools/package-final.js
  */
@@ -27,7 +27,8 @@ const FILES = [
 // Dependencies first: error workflow, called sub-workflows, monitoring, data jobs, then the user-facing bot.
 const IMPORT_ORDER = ['09-error-handler.json', '03-telegram-sender.json', '02-ai-analyst.json', '08-health-monitor.json',
   '01-master-pipeline.json', '04-pre-event.json', '05-post-event.json', '06-daily-report.json', '07-telegram-bot.json'];
-const DOCS = ['CREDENTIALS.md', '.env.example', 'DATABASE.md', 'IMPORT_ORDER.md', 'VERIFICATION.md', 'ROLLBACK.md', 'verify-package.sh'];
+const DOCS = ['CREDENTIAL_SETUP.md', 'CREDENTIALS.md', '.env.example', 'DATABASE.md', 'IMPORT_ORDER.md', 'VERIFICATION.md', 'ROLLBACK.md',
+  'verify-package.sh', 'verify-package.js', 'import-all.sh', 'import-all.ps1', 'check-import.js'];
 
 const sha = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
 const short = (t) => t.split('.').pop();

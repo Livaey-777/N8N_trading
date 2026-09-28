@@ -6,6 +6,7 @@
  *   node tools/n8n-local.js owner-setup          # create the local test owner (first run only)
  *   node tools/n8n-local.js import-credentials   # Postgres credential from .env (encrypted by n8n)
  *   node tools/n8n-local.js import-workflows     # all workflows/*.json (n8n must be stopped)
+ *   node tools/n8n-local.js cli <n8n args...>    # any n8n CLI command with this pilot's environment (database, user folder)
  *
  * The n8n process receives .env through its environment; nothing is printed.
  */
@@ -200,6 +201,7 @@ async function main() {
   } else if (cmd === 'owner-setup') await ownerSetup();
   else if (cmd === 'import-credentials') importCredentials();
   else if (cmd === 'import-workflows') importWorkflows();
+  else if (cmd === 'cli') cli(process.argv.slice(3));
   else throw new Error(`unknown command ${cmd}`);
 }
 
