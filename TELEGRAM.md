@@ -45,7 +45,27 @@ acknowledged immediately (no spinner) and is answered exactly like the typed com
 | 🎛 AI CONTROL CENTER | `/ai` | AI menu (buttons): `/ai usage` · `/ai health` · `/ai model` · `/ai fallback` · `/ai config` · `/ai failures` · `/ai performance` |
 | 📊 AI USAGE | `/usage`, `/ai_usage` | 🤖 AI USAGE CENTER: per model requests (today / hour), tokens (UNKNOWN when not reported), last request / success, failures, fallbacks, capacity; system totals, quota, provider counter, cost; last 24 hours |
 
-Also available: `/daily`, `/gold`, `/scenarios`, `/event <id>`.
+Also available: `/brief`, `/daily`, `/gold`, `/scenarios`, `/event <id>`.
+
+**📋 GOLD BRIEF (`/brief`)**: the compact desk view in one message (about 1.9 k characters). It has no menu button;
+the agreed `/start` layout is unchanged. Sections, in this order:
+1. `📋 GOLD BRIEF` and the time.
+2. `🥇 GOLD` price (24h change) and `REGIME`.
+3. `📊 CALIBRATED PROBABILITY`: **NEXT 1 DAY** (SHORT cell) and **NEXT 5 DAYS** (TACTICAL cell). Each shows
+   Bullish / Bearish / Neutral %, Confidence and Evidence.
+4. `🧭 BIAS`: SHORT, TACTICAL, SWING and STRUCTURAL, each as direction · score.
+5. `🎯 MAIN DRIVER` and Counter.
+6. `🔥 TOP SCENARIOS` 1–3 (the `/biggest` ranking), each with its conditional first-hours probability.
+7. `📅 NEXT EVENT` and `PRE-EVENT:` direction · score · confidence.
+8. `✅ MARKET` confirmation.
+9. `⚠️ INVALIDATION`.
+10. `📡 DATA` quality and sources.
+
+Rules (same as `/now` and `/biggest`, `src/lib/telegram-direction.js → formatBrief`):
+* percentages come only from a CALIBRATED cell; otherwise `UNAVAILABLE — <reason>` and `Evidence: INSUFFICIENT`;
+* Confidence is the deterministic 0–100 value shown as `/100`, never converted into a probability;
+* the scenario probability is conditional (if the scenario is confirmed) and shown only when calibrated;
+* no trade execution language.
 
 Only 🔮 BIGGEST SCENARIOS may call the AI; every other reply is built from stored state. Polling interval:
 `GI_BOT_POLL_SECONDS` (30 s) with `GI_BOT_LONGPOLL_SECONDS` long-poll; each batch is confirmed immediately so an

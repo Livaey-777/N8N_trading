@@ -56,6 +56,11 @@ function reply(cmd, args) {
     case '/now':
       if (!desk) return { text: '<b>XAUUSD — NOW</b>\nDesk state not computed yet (market run pending). Try again after the next market tick.' };
       return { text: TD.formatGoldNow(desk, state, catSummary, next, tz, { layers: desk.layers || null, dataQuality: deskDq(), cells: d.calibration || [], cfg: cfg.calibration }), reply_markup: M.BACK_TO_MENU };
+    case '/brief': {
+      if (!desk) return { text: '📋 <b>GOLD BRIEF</b>\nDesk state not computed yet (market run pending). Try again after the next market tick.' };
+      const ranked = B.withProbabilities(B.rankScenarios((d.biggest || []).map((f) => ({ ...f, label: label(f.event_type) }))), d.calibration || []);
+      return { text: TD.formatBrief(desk, state, ranked, next, tz, { layers: desk.layers || null, dataQuality: deskDq(), cells: d.calibration || [], cfg: cfg.calibration }), reply_markup: M.BACK_TO_MENU };
+    }
     case '/daily': {
       const rep = d.daily;
       if (!rep || !rep.final || !rep.final.text) return { text: 'No daily report generated yet today.' };

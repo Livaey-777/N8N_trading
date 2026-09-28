@@ -1,5 +1,11 @@
 # Test report — FINAL LIVE PILOT
 
+> **2026-09-28 17:45 UTC — cloud session (second pass).** `/brief` implemented and verified through the real bot
+> workflow. Regression: tests 113/113, validation 9/9, SQL 11/11, bot 55/55 (31 commands + 24 buttons), gitleaks history
+> clean. The final package `deploy/n8n-final/` passed its audit and a real CLI import on a fresh instance. The live release
+> gate (scheduled PRE_EVENT / DAILY_REPORT, AI health, real Telegram / OpenRouter) is still **PENDING**: this session
+> cannot reach the owner's PC.
+>
 > **2026-09-28 17:10 UTC — cloud session.** The three remaining live checks (first scheduled PRE_EVENT, first scheduled
 > DAILY_REPORT, AI fallback health) are **NOT VERIFIED**: the cloud session cannot reach the owner's PC. They are read with
 > `node tools/verify-live.js` on the PC. A throwaway cloud replica proved the scheduled paths in real n8n 1.117.2 up to
@@ -145,3 +151,17 @@ lookahead 48 h, one PCE release fixture (30 Sep 12:30 UTC, the time from the liv
 
 Defects fixed: IPv6-less hosts crash-looped n8n (`N8N_LISTEN_ADDRESS=0.0.0.0`); `.env.example` named the old model chain;
 DEPLOYMENT.md's workflow-update command left every schedule inactive; image override for blocked registries (`N8N_IMAGE`).
+
+## Cloud session, second pass: /brief + final package (2026-09-28 17:00–17:45 UTC)
+
+| Component | Result | Evidence |
+|---|---|---|
+| `/brief` | **PASS** (workflow); real delivery PENDING | agreed sections in order; percentages only from CALIBRATED cells (NEXT 5 DAYS 31/23/46, n=247); confidence `/100`; UNAVAILABLE + reason otherwise; 4 unit tests; bot execution #32 composed it (1 888 chars) |
+| Bot commands | **PASS 55/55** | 31 typed (all commands, `/ai *`, `/brief@Bot`) + 24 inline buttons → 55 replies, 0 unknown, 0 empty, 0 errors (delivery NOT_CONFIGURED: no token) |
+| Unit tests | **PASS 113/113** | + `tests/brief.test.js` |
+| Workflow validation | **PASS 9/9** | structure unchanged; only bundled Code-node text |
+| SQL checks | **PASS 11/11** | fresh PostgreSQL 16; checker made self-contained, asserts Error Handler dedup |
+| Package audit | **PASS 13/13** | `deploy/n8n-final/verify-package.sh`; catches injected faults |
+| Package import (CLI, fresh instance) | **PASS** | 9 imports, credential after (27/27 links), references 20/20, 6 activated, scheduled Master + Health `success`, 🧪 Telegram / AI Router tests `success`, 0 errors |
+| Secret scan, history | **PASS** | gitleaks 8.28.0 over all commits + targeted patterns: none |
+| Live gate (PRE_EVENT, DAILY_REPORT, AI health, real Telegram, real OpenRouter) | **PENDING** | not reachable from the cloud session |

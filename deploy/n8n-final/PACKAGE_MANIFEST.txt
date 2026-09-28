@@ -1,0 +1,96 @@
+GOLD INTELLIGENCE — n8n FINAL IMPORT PACKAGE
+Target: self-hosted n8n 1.117.2 (Docker or npm) + PostgreSQL 16. Not n8n Cloud (see IMPORT_ORDER.md).
+Built: 2026-09-28T17:44:28.620Z by tools/package-final.js from workflows/*.json (byte-identical copies).
+Secrets: none. Every secret is a placeholder in .env.example / CREDENTIALS.md.
+
+RELEASE GATE — the package may be imported for production only when all three pass on the RUNNING instance
+(node tools/verify-live.js on the local pilot, or sh deploy/n8n-web/verify.sh on the server):
+  1. first scheduled PRE_EVENT run    : PENDING
+  2. first scheduled DAILY_REPORT run : PENDING
+  3. AI fallback health (3 models)    : PENDING
+Record the verify-live SUMMARY in VERIFICATION.md when they pass.
+
+WORKFLOWS (package file · workflow id · name · nodes)
+  01-master-pipeline.json    giMasterPipeline  GI · Master Pipeline (news + market) · 28 nodes
+      triggers: schedule "⏱ News Schedule": every 15 minutes (GI_NEWS_INTERVAL_MIN); manualTrigger "🧪 Synthetic Event Test"; schedule "⏱ Market Schedule": every 10 minutes (GI_MARKET_INTERVAL_MIN)
+      activate after import: YES (scheduled)
+      calls: giAiAnalystSub01 → 02-ai-analyst.json, giTelegramSend01 → 03-telegram-sender.json
+      error workflow: giErrorHandler01 → 09-error-handler.json
+      credentials: GIpostgresCred01 (GI Postgres, postgres) · timezone Africa/Casablanca
+  02-ai-analyst.json         giAiAnalystSub01  GI · AI Analyst (sub-workflow) · 12 nodes
+      triggers: executeWorkflowTrigger "When Called By Pipeline"; manualTrigger "🧪 AI Router Test"
+      activate after import: NO (called / error workflow)
+      calls: giTelegramSend01 → 03-telegram-sender.json
+      error workflow: giErrorHandler01 → 09-error-handler.json
+      credentials: GIpostgresCred01 (GI Postgres, postgres) · timezone Africa/Casablanca
+  03-telegram-sender.json    giTelegramSend01  GI · Telegram Sender (sub-workflow) · 8 nodes
+      triggers: executeWorkflowTrigger "When Called By Pipeline"; manualTrigger "🧪 Telegram Test"
+      activate after import: NO (called / error workflow)
+      calls: none
+      error workflow: giErrorHandler01 → 09-error-handler.json
+      credentials: GIpostgresCred01 (GI Postgres, postgres) · timezone Africa/Casablanca
+  04-pre-event.json          giPreEventEngine  GI · Pre-Event Engine (forecasts) · 20 nodes
+      triggers: schedule "⏱ Daily Pre-Event": daily at 06:00 (GI_PREEVENT_DAILY_HOUR); schedule "⏱ Refresh & Calendar Sync": every 30 minutes (GI_PREEVENT_REFRESH_INTERVAL_MIN); manualTrigger "🧪 Pre-Event Test"
+      activate after import: YES (scheduled)
+      calls: giAiAnalystSub01 → 02-ai-analyst.json, giTelegramSend01 → 03-telegram-sender.json
+      error workflow: giErrorHandler01 → 09-error-handler.json
+      credentials: GIpostgresCred01 (GI Postgres, postgres) · timezone Africa/Casablanca
+  05-post-event.json         giPostEventRevw1  GI · Post-Event Review · 10 nodes
+      triggers: schedule "⏱ Post-Event Schedule": every 30 minutes (GI_POST_EVENT_INTERVAL_MIN); manualTrigger "🧪 Post-Event Test"
+      activate after import: YES (scheduled)
+      calls: giTelegramSend01 → 03-telegram-sender.json
+      error workflow: giErrorHandler01 → 09-error-handler.json
+      credentials: GIpostgresCred01 (GI Postgres, postgres) · timezone Africa/Casablanca
+  06-daily-report.json       giDailyReport001  GI · Daily Report · 15 nodes
+      triggers: schedule "⏱ Daily Report": daily at 07:00 (GI_DAILY_REPORT_HOUR); manualTrigger "🧪 Daily Report Test"
+      activate after import: YES (scheduled)
+      calls: giAiAnalystSub01 → 02-ai-analyst.json, giTelegramSend01 → 03-telegram-sender.json
+      error workflow: giErrorHandler01 → 09-error-handler.json
+      credentials: GIpostgresCred01 (GI Postgres, postgres) · timezone Africa/Casablanca
+  07-telegram-bot.json       giTelegramBot001  GI · Telegram Bot (commands) · 16 nodes
+      triggers: schedule "⏱ Poll Telegram": every 30 seconds (GI_BOT_POLL_SECONDS); manualTrigger "🧪 Simulate Commands"
+      activate after import: YES (scheduled)
+      calls: giAiAnalystSub01 → 02-ai-analyst.json, giTelegramSend01 → 03-telegram-sender.json
+      error workflow: giErrorHandler01 → 09-error-handler.json
+      credentials: GIpostgresCred01 (GI Postgres, postgres) · timezone Africa/Casablanca
+  08-health-monitor.json     giHealthMonitor1  GI · Health Monitor · 13 nodes
+      triggers: schedule "⏱ Health Schedule": every 5 minutes (GI_HEALTH_INTERVAL_MIN); manualTrigger "🧪 Health Check"
+      activate after import: YES (scheduled)
+      calls: giTelegramSend01 → 03-telegram-sender.json
+      error workflow: giErrorHandler01 → 09-error-handler.json
+      credentials: GIpostgresCred01 (GI Postgres, postgres) · timezone Africa/Casablanca
+  09-error-handler.json      giErrorHandler01  GI · Error Handler · 7 nodes
+      triggers: errorTrigger "Error Trigger"
+      activate after import: NO (called / error workflow)
+      calls: none
+      error workflow: none (this is the error workflow)
+      credentials: GIpostgresCred01 (GI Postgres, postgres) · timezone Africa/Casablanca
+
+IMPORT ORDER (dependencies first)
+  1. 09-error-handler.json  (giErrorHandler01)
+  2. 03-telegram-sender.json  (giTelegramSend01)
+  3. 02-ai-analyst.json  (giAiAnalystSub01)
+  4. 08-health-monitor.json  (giHealthMonitor1)
+  5. 01-master-pipeline.json  (giMasterPipeline)
+  6. 04-pre-event.json  (giPreEventEngine)
+  7. 05-post-event.json  (giPostEventRevw1)
+  8. 06-daily-report.json  (giDailyReport001)
+  9. 07-telegram-bot.json  (giTelegramBot001)
+
+FILES (sha256 · bytes · path) — checked by verify-package.sh
+3b05234a7c31c0c45d52d9d64d27200e03a8bc87ea1502a914e3949656fe4414  3836  CREDENTIALS.md
+c9263093ca7e434cdee17d5b0afbaf5c8aebec5da15103c4a6e4feed870b5f4c  5126  .env.example
+fccf0ebfd80cb39b938483e899748470985804522ad022ef14d5af3191b764cd  3104  DATABASE.md
+8c5bbc61ba45ee6c972d1afe08c80f68c89dcdf07135d0e3292e8cbb250da1b6  6521  IMPORT_ORDER.md
+d08839983f22b49ff67e9f0c1ce6cdd8b75cf0b697c68bb7fe9fdd7316ebd614  5691  VERIFICATION.md
+5cbc7107e8f9e90bdffed0c00de7933ecb24f1d8b35bcf3729e7e1fbabbccea2  2648  ROLLBACK.md
+f2a0b229e5e5f2bfe2bfe4871b98322e178c7a374a126492c3395ff9746af90c  8032  verify-package.sh
+c94f69dbfddba0558c4d4d5fa8a3557f7906dbc901ef30b124e7c6ea0fb73a19  586660  workflows/01-master-pipeline.json
+a5595e9e2a90c83953b6de3b82b0443adab4e3277cbe4e9930eb6b8a294859ca  369858  workflows/02-ai-analyst.json
+ff93f9d2dafaae36ffbb888553d8d80b6cc8218f6d834c00d5f519fd5b0e6943  152724  workflows/03-telegram-sender.json
+8392056665f8559625f8871e9abfb6bcc6bc480d70681236e6cacd9013733367  333950  workflows/04-pre-event.json
+efe15935b1f569a1c33da82e9cc90183673cd3bc932970aa9ca50327c90561fc  236206  workflows/05-post-event.json
+2a8637ab5254bc94fb281e1923b970967fe64f4a30bdf4742b74ec99b5f34ae8  461219  workflows/06-daily-report.json
+ec743b03e20a0e2b8a12a7d41a5402f89e385ce9288b7791009287158ab24398  633437  workflows/07-telegram-bot.json
+d841e4ea6474698a4de8b0915b1179c12eba4512b601c6f9eec8c00bb3eca6aa  284400  workflows/08-health-monitor.json
+cc34b16e600b7c1df4620ac6bca89cc9fcac4b9cb3e7aa72af85bade52cd1849  116733  workflows/09-error-handler.json

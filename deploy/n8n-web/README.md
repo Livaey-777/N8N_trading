@@ -6,6 +6,9 @@
 > Check them with `node tools/verify-live.js` (local pilot) or `sh deploy/n8n-web/verify.sh` (server).
 > See [docs/CONTINUATION_STATE.md](../../docs/CONTINUATION_STATE.md).
 
+**Final import package:** [deploy/n8n-final/](../n8n-final/). It holds the 9 numbered workflows, the manifest,
+`IMPORT_ORDER.md` and `verify-package.sh`. This runbook covers the server around it.
+
 This package deploys the same system that was live-verified locally: the same workflow JSON (byte-identical,
 rebuilt from `src/`), schema, seeds and configuration, with no redesign. It contains no secrets. Every secret
 is a placeholder that the owner fills in on the server.
@@ -181,7 +184,7 @@ Record the evidence (execution ids, Telegram message ids, timestamps) for each s
 
 | # | Check | How | Pass when |
 |---|---|---|---|
-| 1 | Package integrity | `npm ci && npm test && node tools/build-workflows.js && git status --short && node tools/validate-workflows.js` (CI or a workstation) | 105/105; rebuild leaves **no diff**; validation PASSED (no embedded secrets) |
+| 1 | Package integrity | `npm ci && npm test && node tools/build-workflows.js && git status --short && node tools/validate-workflows.js` (CI or a workstation) | 113/113; rebuild leaves **no diff**; validation PASSED (no embedded secrets) |
 | 2 | Containers | `docker compose ps` | postgres + n8n `healthy`, bootstrap `exited (0)` |
 | 3 | Database | `docker compose exec postgres psql -U gold_intel -d gold_intel -c "select count(*) from historical_event_reactions"` | 362; tables `ai_usage`, `calibration_cells` exist |
 | 4 | Workflows | editor, or `psql -d n8n -c "select id, active from workflow_entity"` | 9 ids as in §6; the 6 scheduled ones active; timezone Africa/Casablanca |

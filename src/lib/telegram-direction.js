@@ -156,4 +156,70 @@ function directionSummary(desk, cells, dq, cfg) {
   ].filter(Boolean);
 }
 
-module.exports = { LEGEND, probabilityLines, probabilityShort, consistencyLine, deskProbabilities, directionDeskBox, formatGoldNow, directionSummary };
+/** NEXT 1 DAY / NEXT 5 DAYS block: percentages only from a CALIBRATED cell; confidence is the desk's, never a %. */
+function briefProbabilityLines(title, p, row) {
+  const conf = `Confidence: ${esc(row ? row.confidence : 'n/a')}/100`;
+  if (!p || p.status !== 'CALIBRATED') {
+    const why = !p ? 'not calibrated' : /insufficient/.test(p.reason || '') && p.n !== undefined ? `only ${p.n} cases`
+      : /walk-forward/.test(p.reason || '') ? 'failed walk-forward validation' : p.reason || 'not calibrated';
+    return [b(title), `Bullish / Bearish / Neutral: UNAVAILABLE — ${esc(why)}`, conf, 'Evidence: INSUFFICIENT'];
+  }
+  return [b(title), `Bullish: ${p.bullish_pct}%`, `Bearish: ${p.bearish_pct}%`, `Neutral: ${p.neutral_pct}%`, conf,
+    `Evidence: ${esc(p.evidence)} · n=${p.n}${p.market_state ? ` · market ${esc(p.market_state.toLowerCase())}` : ''}`];
+}
+
+/**
+ * 📋 GOLD BRIEF (/brief): the compact desk view. Same inputs and rules as GOLD NOW and BIGGEST SCENARIOS:
+ * probabilities only from validated cells, confidence and score never shown as a probability, the rank
+ * order deterministic. `ranked` = rankScenarios + withProbabilities; `next` = next major event + its forecast.
+ */
+function formatBrief(desk, state, ranked, next, tz, extra = {}) {
+  const dq = extra.dataQuality || null;
+  const dqLevel = dq ? dq.level : desk.data_quality;
+  const view = D.horizonView(desk, dqLevel);
+  const row = (h) => view.find((r) => r.horizon === h);
+  const probs = deskProbabilities(desk, extra.cells || [], dqLevel, extra.cfg);
+  const g = state && state.gold;
+  const fc = next && next.forecast;
+  const confirm = view.filter((r) => r.confirmation && r.confirmation !== 'UNAVAILABLE')
+    .map((r) => `${r.horizon.toLowerCase()} ${r.confirmation}${r.gold_change_pct !== null ? ` (gold ${signed(r.gold_change_pct)}%)` : ''}`).join(' · ') || 'not measurable yet';
+  const cut = (s, n) => (String(s || '').length > n ? `${String(s).slice(0, n - 1)}…` : String(s || ''));
+  const scen = (ranked || []).slice(0, 3).map((s) => {
+    const p = s.probability && s.probability.SHORT;
+    const prob = p && p.status === 'CALIBRATED' ? `if confirmed, first hours: 🟢 ${p.bullish_pct}% · 🔴 ${p.bearish_pct}% · ⚪ ${p.neutral_pct}% (n=${p.n})` : 'conditional probability: unavailable';
+    return `${s.rank}. ${ICON[s.kind] || '⚪'} ${esc(s.kind)} · ${esc(s.label)} ${esc(localTime(s.scheduled_at, tz))} — ${esc(cut(s.trigger, 70))}\n   ${esc(prob)}`;
+  });
+  const src = dq ? [dq.gold_source && `gold ${String(dq.gold_source).split(' ')[0]}`, dq.usd_source && `USD ${String(dq.usd_source).split(' ')[0]}`].filter(Boolean).join(' · ') : '';
+  return [
+    `📋 ${b('GOLD BRIEF')}`,
+    esc(localTime(new Date().toISOString(), tz)),
+    '',
+    `🥇 ${b('GOLD')} ${g ? `${esc(g.value)} (24h ${esc(signed(g.change_24h_pct))}%)` : 'unavailable'}`,
+    `${b('REGIME:')} ${esc(desk.regime)}`,
+    '',
+    `📊 ${b('CALIBRATED PROBABILITY')}`,
+    ...briefProbabilityLines('NEXT 1 DAY', probs.SHORT, row('SHORT')),
+    ...briefProbabilityLines('NEXT 5 DAYS', probs.TACTICAL, row('TACTICAL')),
+    '',
+    `🧭 ${b('BIAS')}`,
+    ...view.map((r) => `${esc(r.horizon)}: ${ICON[r.direction] || ''} ${esc(r.direction)} · score ${esc(signed(r.score))}`),
+    '',
+    `🎯 ${b('MAIN DRIVER:')} ${esc(desk.dominant_driver || 'none')}`,
+    `${b('Counter:')} ${esc(desk.counter_driver || 'none')}`,
+    '',
+    `🔥 ${b('TOP SCENARIOS')}`,
+    ...(scen.length ? scen : ['none — no active pre-event forecasts in the next 7 days']),
+    '',
+    `📅 ${b('NEXT EVENT:')} ${esc(next ? `${next.label} — ${localTime(next.scheduled_at, tz)} (${untilText(next.scheduled_at)})` : 'none scheduled in the next 7 days')}`,
+    `${b('PRE-EVENT:')} ${fc ? `${ICON[fc.forecast_state] || ''} ${esc(fc.forecast_state)} · score ${esc(signed(fc.pre_event_score))} · confidence ${esc(fc.confidence)}` : 'no forecast yet'}`,
+    '',
+    `✅ ${b('MARKET:')} ${esc(confirm)}`,
+    '',
+    `⚠️ ${b('INVALIDATION:')} ${esc(D.invalidation(desk, extra.layers || desk.layers || {}))}`,
+    '',
+    `📡 ${b('DATA:')} ${esc(dq ? dq.level : dqLevel || 'UNKNOWN')}${src ? ` · ${esc(src)}` : ''}${dq && dq.reasons && dq.reasons.length ? ` — ${esc(cut(dq.reasons[0], 80))}` : ''}`,
+    i('% = calibrated history only · score −100…+100 · confidence 0–100 · intelligence only, not a trade signal'),
+  ].join('\n');
+}
+
+module.exports = { LEGEND, probabilityLines, probabilityShort, consistencyLine, deskProbabilities, directionDeskBox, formatGoldNow, directionSummary, formatBrief };

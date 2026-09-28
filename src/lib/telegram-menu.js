@@ -37,7 +37,7 @@ function formatMenu(tz) {
     '',
     ...MENU.map(([t, c]) => `${esc(t)} — ${esc(c)}`),
     '',
-    i(`Also: /daily · /gold · /scenarios · /event <id> · /ai health · /ai model · /ai failures · ${localTime(new Date().toISOString(), tz)}`),
+    i(`Also: /brief · /daily · /gold · /scenarios · /event <id> · /ai health · /ai model · /ai failures · ${localTime(new Date().toISOString(), tz)}`),
   ].join('\n');
 }
 

@@ -10,7 +10,7 @@ const { fmtPct, fmtBp } = require('./preevent');
 
 const MAX_LEN = 4000;
 const RULE = '━━━━━━━━━━━━━━━━━━━━';
-const COMMANDS = ['/start', '/menu', '/now', '/biggest', '/news', '/geopolitics', '/politics', '/macro', '/market', '/events', '/bias', '/history', '/alerts', '/review', '/analysis', '/status', '/daily', '/gold', '/scenarios', '/event', '/ai', '/usage', '/ai_usage'];
+const COMMANDS = ['/start', '/menu', '/now', '/brief', '/biggest', '/news', '/geopolitics', '/politics', '/macro', '/market', '/events', '/bias', '/history', '/alerts', '/review', '/analysis', '/status', '/daily', '/gold', '/scenarios', '/event', '/ai', '/usage', '/ai_usage'];
 const CLASS_ICON = { CRITICAL: '🔴', HIGH: '🟠', MEDIUM: '🟡', LOW: '⚪', INFORMATIONAL: '⚪' };
 const STATE_ICON = { BULLISH: '🟢', BEARISH: '🔴', MIXED: '🟠', NEUTRAL: '⚪', UNDETERMINED: '❔' };
 
